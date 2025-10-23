@@ -1,5 +1,7 @@
 en:
   theme_metadata:
-    description: ''
+    description: ""
     settings:
       example_setting: A description of a setting.
+
+  insert_swiper_sample: "Image slider"
