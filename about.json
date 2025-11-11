@@ -9,7 +9,16 @@
   "minimum_discourse_version": null,
   "maximum_discourse_version": null,
   "assets": {
-    "swiper_js": "assets/swiper-bundle.min.js"
+    "swiper_js": "assets/swiper-bundle.min.js",
+    "icons-sprite": "./assets/custom-icons.svg"
   },
-  "modifiers": {}
+  "modifiers": {
+    "svg_icons": [
+      "grip-vertical",
+      "xmark",
+      "minus",
+      "window-minimize",
+      "window-maximize"
+    ]
+  }
 }

@@ -1,2 +1,5 @@
-example_setting:
-  default: true
+swiper_default_width:
+  default: "100%"
+
+swiper_default_height:
+  default: "auto"

@@ -2,6 +2,102 @@ en:
   theme_metadata:
     description: ""
     settings:
-      example_setting: A description of a setting.
+      swiper_default_width: "This is the default width of the swiper. By default, it uses all the available width."
+      swiper_default_height: "This is the default height of the swiper. By default, it adjusts automatically."
 
   insert_swiper_sample: "Image slider"
+  composer:
+    swiper:
+      edit_title: "Edit Swiper Gallery"
+      edit_instructions: "Focus the zone, then add, remove, and reorder images."
+
+      toolbar:
+        edit: "Edit Swiper Gallery"
+        validate: "Validate changes"
+        settings: " Swiper Settings"
+        delete: "Delete Swiper Gallery"
+        move_left: "Move image left"
+        move_right: "Move image right"
+
+      settings:
+        title: "Swiper Settings"
+        save: "Save Settings"
+        close: "Close Settings"
+
+        category:
+          general: "General"
+          thumbnail: "Thumbnail"
+          effect: "Effect"
+          autoplay: "Autoplay"
+          navigation: "Navigation"
+          pagination: "Pagination"
+
+        general:
+          direction: "Slide direction"
+          direction_horizontal: "Horizontal"
+          direction_vertical: "Vertical"
+          slides_per_view: "Slides per view"
+          slides_per_view_auto: "Auto"
+          slides_per_group: "Slides per group"
+          slides_per_group_auto: "Auto"
+          slides_rows: "Slides per row"
+          centered_slides: "Centered slides"
+          space_between: "Space between (px)"
+          auto_height: "Auto height"
+          grab_cursor: "Grab cursor"
+          loop_mode: "Loop mode"
+          loop_mode_disabled: "Disabled"
+          loop_mode_loop: "Loop"
+          loop_mode_rewind: "Rewind"
+
+        thumbnail:
+          enable: "Enable thumbnail slider"
+          slides_per_view: "Thumbnail slides per view"
+          space_between: "Space between thumbnails (px)"
+          direction: "Thumbnail slider direction"
+          direction_horizontal: "Horizontal"
+          direction_vertical: "Vertical"
+          slide_on_hover: "Slide on hover"
+
+        effect:
+          type: "Effect type"
+          fx_slide: "Slide"
+          fx_fade: "Fade"
+          fx_cube: "Cube"
+          fx_coverflow: "Coverflow"
+          fx_flip: "Flip"
+          crossfade: "Crossfade"
+          duration: "Transition duration (ms)"
+
+        autoplay:
+          enable: "Autoplay"
+          delay: "Autoplay delay (ms)"
+          pause_on_pointer: "Pause on pointer hover"
+          disable_on_interaction: "Disable on interaction"
+          reverse_direction: "Reverse direction"
+          stop_on_last: "Stop on last slide"
+
+        navigation:
+          enable: "Show navigation arrows"
+          color: "Color"
+          placement: "Placement"
+          placement_inside: "Inside"
+          placement_outside: "Outside"
+          position: "Position"
+          position_top: "Top"
+          position_center: "Center"
+          position_bottom: "Bottom"
+          hide_on_click: "Hide on click"
+
+        pagination:
+          enable: "Show pagination"
+          color: "Color"
+          placement: "Placement"
+          position: "Position"
+          position_top: "Top"
+          position_center: "Center"
+          position_bottom: "Bottom"
+          type: "Type"
+          clickable: "Clickable"
+          dynamic_bullets: "Dynamic bullets"
+          dynamic_main_bullets: "Dynamic main bullets"

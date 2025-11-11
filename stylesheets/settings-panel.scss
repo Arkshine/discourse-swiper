@@ -1,0 +1,163 @@
+@import "common/foundation/mixins";
+
+.swiper-settings-panel {
+  border-radius: var(--d-border-radius);
+  width: 320px;
+  position: relative;
+
+  &__title {
+    color: var(--primary-medium);
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-2);
+
+    border-bottom: 1px solid var(--primary-low);
+
+    cursor: move;
+    user-select: none;
+
+    .drag-handle-grip {
+      display: flex;
+      align-items: center;
+      color: var(--primary-medium);
+      pointer-events: none;
+    }
+
+    .drag-handle-actions {
+      display: flex;
+      gap: 4px;
+    }
+  }
+
+  .settings-categories-header {
+    display: flex;
+    justify-content: space-evenly;
+
+    background: var(--primary-very-low);
+    border-bottom: 2px solid var(--primary-low);
+
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    flex-wrap: nowrap;
+
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1em;
+
+      &.active {
+        background: var(--tertiary-low);
+      }
+
+      .d-icon {
+        font-size: 1.5em;
+        margin-right: 0;
+      }
+    }
+  }
+
+  .settings-section-content {
+    padding-top: var(--space);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space);
+    margin-block: var(--space);
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space) var(--space-3);
+      border-radius: var(--d-border-radius);
+      transition: background 0.2s;
+      font-size: var(--font-down-1);
+      gap: var(--space);
+
+      &:hover {
+        background: var(--primary-very-low);
+      }
+
+      &.has-range-input {
+        align-items: self-start;
+        flex-direction: column;
+
+        .setting-control {
+          $indent: calc(var(--space-2) + 1em);
+          margin-left: calc($indent);
+          width: calc(100% - $indent);
+          justify-content: space-between;
+
+          input.setting-slider {
+            width: 70%;
+            cursor: grab;
+          }
+        }
+      }
+
+      &.has-range-input.no-label-icon {
+        .setting-control {
+          margin-left: 0;
+          width: 100%;
+
+          input.setting-slider {
+            width: calc(70% - var(--space-2));
+          }
+        }
+      }
+
+      &.no-label-icon {
+        margin-left: calc(var(--space-2) + 1em);
+      }
+    }
+
+    .setting-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex: 1;
+      min-width: 0;
+    }
+
+    .setting-icon {
+      color: var(--primary-medium);
+      flex-shrink: 0;
+    }
+
+    .setting-label span {
+      color: var(--primary);
+      font-size: var(--base-font-size-smaller);
+    }
+
+    .setting-control {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-shrink: 0;
+      font-size: var(--base-font-size-smaller);
+
+      .setting-input {
+        width: 60px;
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--base-font-size-smaller);
+        margin: 0;
+      }
+
+      input[type="color"] {
+        width: 4em;
+      }
+    }
+  }
+}
