@@ -1,31 +1,28 @@
+import { camelize } from "@ember/string";
 import { apiInitializer } from "discourse/lib/api";
 import SwiperInline from "../components/swiper-inline";
+import MediaElementParser from "../lib/media-element-parser";
+import swiperExtension from "../lib/rich-editor-extension";
+import { parseWrapParam } from "../lib/utils";
 
 export default apiInitializer((api) => {
+  initializeSwiper(api);
+});
+
+function initializeSwiper(api) {
   function applySwiper(element, helper) {
     const isPreview = !helper?.model;
     const container = document.createElement("div");
     container.classList.add("swiper-wrap-container");
 
-    const thumbnailNodes = Array.from(element.querySelectorAll("img")).map(
-      (img) => img.cloneNode(true)
-    );
-
-    const lightboxNodes = isPreview
-      ? element.querySelectorAll("img")
-      : Array.from(element.children)
-          .filter(
-            (child) =>
-              child.classList?.contains("lightbox-wrapper") ||
-              child.tagName === "IMG"
-          )
-          .map((child) => child.cloneNode(true));
+    for (const [key, value] of Object.entries(element.dataset)) {
+      container.dataset[camelize(key)] = value;
+    }
 
     helper.renderGlimmer(container, SwiperInline, {
-      lightbox: lightboxNodes,
-      thumbnails: thumbnailNodes,
-      preview: !helper.model,
-      config: element.dataset,
+      preview: isPreview,
+      config: parseWrapParam({ ...element.dataset }),
+      parsedData: MediaElementParser.run(element),
     });
 
     element.replaceWith(container);
@@ -34,10 +31,12 @@ export default apiInitializer((api) => {
   api.decorateCookedElement((element, helper) => {
     element
       .querySelectorAll("[data-wrap=swiper]")
-      .forEach((element) => applySwiper(element, helper));
+      .forEach((swiper) => applySwiper(swiper, helper));
   });
 
-  window.I18n.translations[window.I18n.locale].js.composer.swiper_sample = " ";
+  api.registerRichEditorExtension(swiperExtension);
+
+  window.I18n.translations[window.I18n.locale].js.composer.swiper_sample = "";
 
   api.addComposerToolbarPopupMenuOption({
     icon: "images",
@@ -53,4 +52,4 @@ export default apiInitializer((api) => {
       );
     },
   });
-});
+}
