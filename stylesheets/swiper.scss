@@ -1,9 +1,18 @@
-// Original Swiper CSS
+/**
+ * Swiper 12.1.3
+ * Most modern mobile touch slider and framework with hardware accelerated transitions
+ * https://swiperjs.com
+ *
+ * Copyright 2014-2026 Vladimir Kharlampidi
+ *
+ * Released under the MIT License
+ *
+ * Released on: March 24, 2026
+ */
 
 :root {
   --swiper-theme-color: #007aff;
 }
-
 :host {
   display: block;
   margin-left: auto;
@@ -11,7 +20,6 @@
   position: relative;
   z-index: 1;
 }
-
 .swiper {
   display: block;
   list-style: none;
@@ -101,10 +109,24 @@
     > .swiper-wrapper {
       scroll-snap-type: x mandatory;
     }
+    > .swiper-wrapper > .swiper-slide:first-child {
+      margin-inline-start: var(--swiper-slides-offset-before);
+      scroll-margin-inline-start: var(--swiper-slides-offset-before);
+    }
+    > .swiper-wrapper > .swiper-slide:last-child {
+      margin-inline-end: var(--swiper-slides-offset-after);
+    }
   }
   &.swiper-vertical {
     > .swiper-wrapper {
       scroll-snap-type: y mandatory;
+    }
+    > .swiper-wrapper > .swiper-slide:first-child {
+      margin-block-start: var(--swiper-slides-offset-before);
+      scroll-margin-block-start: var(--swiper-slides-offset-before);
+    }
+    > .swiper-wrapper > .swiper-slide:last-child {
+      margin-block-end: var(--swiper-slides-offset-after);
     }
   }
   &.swiper-free-mode {
@@ -264,6 +286,7 @@
   .swiper-navigation-disabled & {
     display: none !important;
   }
+  ::slotted(svg),
   svg {
     height: 100%;
     object-fit: contain;
@@ -284,7 +307,8 @@
 .swiper-button-prev {
   left: var(--swiper-navigation-sides-offset, 4px);
   right: auto;
-  .swiper-navigation-icon {
+  .swiper-navigation-icon,
+  ::slotted(.swiper-navigation-icon) {
     transform: rotate(180deg);
   }
 }
@@ -319,13 +343,15 @@
   &.swiper-rtl ~ .swiper-button-next,
   & ~ .swiper-button-prev,
   .swiper-button-prev {
-    .swiper-navigation-icon {
+    .swiper-navigation-icon,
+    ::slotted(.swiper-navigation-icon) {
       transform: rotate(180deg);
     }
   }
   &.swiper-rtl .swiper-button-prev,
   &.swiper-rtl ~ .swiper-button-prev {
-    .swiper-navigation-icon {
+    .swiper-navigation-icon,
+    ::slotted(.swiper-navigation-icon) {
       transform: rotate(0deg);
     }
   }
@@ -344,7 +370,8 @@
   ~ .swiper-button-prev {
     bottom: auto;
     top: var(--swiper-navigation-sides-offset, 4px);
-    .swiper-navigation-icon {
+    .swiper-navigation-icon,
+    ::slotted(.swiper-navigation-icon) {
       transform: rotate(-90deg);
     }
   }
@@ -352,7 +379,8 @@
   ~ .swiper-button-next {
     bottom: var(--swiper-navigation-sides-offset, 4px);
     top: auto;
-    .swiper-navigation-icon {
+    .swiper-navigation-icon,
+    ::slotted(.swiper-navigation-icon) {
       transform: rotate(90deg);
     }
   }
@@ -417,7 +445,7 @@
     --swiper-pagination-bullet-width,
     var(--swiper-pagination-bullet-size, 8px)
   );
-  button {
+  button& {
     appearance: none;
     border: none;
     box-shadow: none;
