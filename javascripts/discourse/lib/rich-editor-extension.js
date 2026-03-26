@@ -1,9 +1,8 @@
 import { camelize } from "@ember/string";
 import { deepMerge } from "discourse/lib/object";
 import SwiperNodeView from "../components/swiper-node-view";
-import GlimmerNodeView from "../lib/glimmer-node-view";
 import { changedDescendants } from "../lib/rich-editor-utils";
-import { DEFAULT_SETTINGS, SWIPER_NODEVIEW_CLASS } from "./constants";
+import { DEFAULT_SETTINGS } from "./constants";
 import { flattenObject, normalizeSettings } from "./utils";
 
 const extension = {
@@ -15,9 +14,7 @@ const extension = {
       group: "block",
       selectable: true,
       draggable: true,
-      isolating: true,
       createGapCursor: true,
-      atom: true,
       attrs: {
         ...flattenObject({ ...DEFAULT_SETTINGS }, { withDefault: true }),
         mode: { default: "view" }, // 'view' or 'edit'
@@ -72,8 +69,8 @@ const extension = {
       group: "inline",
       inline: true,
       atom: true,
-      selectable: true,
-
+      draggable: false,
+      selectable: false,
       parseDOM: [
         {
           tag: "div.swiper-placeholder",
@@ -86,18 +83,10 @@ const extension = {
   },
 
   nodeViews: {
-    swiper:
-      ({ getContext }) =>
-      (node, view, getPos) => {
-        return new GlimmerNodeView({
-          node,
-          view,
-          getPos,
-          getContext,
-          component: SwiperNodeView,
-          name: "swiper",
-        });
-      },
+    swiper: {
+      component: SwiperNodeView,
+      hasContent: true,
+    },
   },
 
   parse: {
@@ -196,6 +185,7 @@ const extension = {
   plugins({
     pmState: { Plugin, NodeSelection, Selection, TextSelection, PluginKey },
     pmModel: { Fragment },
+    pmView: { Decoration, DecorationSet },
   }) {
     const swiperPlugin = new Plugin({
       key: new PluginKey("swiper"),
@@ -204,9 +194,8 @@ const extension = {
       // TODO: others elements such as videos, oneboxes, etc?
       appendTransaction(transactions, oldState, newState) {
         if (
-          transactions.some(
-            (tr) => tr.getMeta("swiperNormalization") || !tr.docChanged
-          )
+          transactions.some((tr) => tr.getMeta("swiperNormalization")) ||
+          !transactions.some((tr) => tr.docChanged)
         ) {
           return null;
         }
@@ -229,13 +218,13 @@ const extension = {
           }
         });
 
-        // Sort positions in descending order to prevent position invalidation issues
+        // Sorts positions in descending order to prevent position invalidation issues
         const sortedPositions = Array.from(swipersToNormalize).sort(
           (a, b) => b - a
         );
 
         sortedPositions.forEach((pos) => {
-          // Map the position through any previous transaction changes
+          // Maps the position through any previous transaction changes
           const mappedPos = tr ? tr.mapping.map(pos) : pos;
           const doc = tr ? tr.doc : newState.doc;
 
@@ -276,41 +265,24 @@ const extension = {
               return true;
             }
 
-            const firstChild = node.firstChild;
-            if (firstChild.type.name !== "paragraph") {
+            const paragraph = node.firstChild;
+            if (paragraph.type.name !== "paragraph") {
               return true;
             }
 
-            if (images.length === 0) {
-              if (firstChild.childCount !== 1) {
-                return true;
-              }
-
-              return firstChild.firstChild?.type.name !== "swiper_placeholder";
-            }
-
-            // images + placeholder
-            if (firstChild.childCount !== images.length + 1) {
+            if (paragraph.childCount !== images.length) {
               return true;
             }
 
-            let hasWrongStructure = false;
-            firstChild.content.forEach((inlineNode, idx) => {
-              if (idx === images.length) {
-                if (inlineNode.type.name !== "swiper_placeholder") {
-                  hasWrongStructure = true;
-                }
-              } else {
-                if (
-                  inlineNode.type.name !== "image" ||
-                  inlineNode !== images[idx]
-                ) {
-                  hasWrongStructure = true;
-                }
+            // Check all children are the expected images in order
+            let mismatch = false;
+            paragraph.content.forEach((child, _, idx) => {
+              if (child.type.name !== "image" || child !== images[idx]) {
+                mismatch = true;
               }
             });
 
-            return hasWrongStructure;
+            return mismatch;
           })();
 
           if (!needsNormalization) {
@@ -322,14 +294,10 @@ const extension = {
             node.attrs,
             newState.schema.nodes.paragraph.create(
               null,
-              Fragment.fromArray(
-                images.length > 0
-                  ? [
-                      ...images,
-                      newState.schema.nodes.swiper_placeholder.create(),
-                    ]
-                  : []
-              )
+              Fragment.fromArray([
+                ...images,
+                newState.schema.nodes.swiper_placeholder.create(),
+              ])
             )
           );
 
@@ -339,7 +307,7 @@ const extension = {
 
           tr.replaceWith(mappedPos, mappedPos + node.nodeSize, newSwiper);
 
-          // Make sure to re-select paragraph, useful for multiple uploads.
+          // Makes sure to re-select paragraph, useful for multiple uploads.
           const updatedNode = tr.doc.nodeAt(mappedPos);
           if (updatedNode?.attrs.mode === "edit") {
             // Place cursor before the placeholder
@@ -376,20 +344,16 @@ const extension = {
             view._swiperPM.movingImageToSwiper = null;
           },
         },
-        handleClickOn(view, pos, node, nodePos, event) {
+        handleClickOn(view, _pos, node, nodePos) {
           if (node.type.name === "swiper") {
-            if (event.target.localName === "img") {
+            // In edit mode, let PM handle clicks normally
+            if (node.attrs.mode === "edit") {
               return;
             }
 
-            // When swiper is the first element in the editor, clicking on it
-            // doesn't place the cursor inside. We do it manually.
-            if (nodePos > 0) {
-              return;
-            }
-
+            // In view mode, select the whole node to show the toolbar
             const tr = view.state.tr.setSelection(
-              TextSelection.create(view.state.doc, nodePos)
+              NodeSelection.create(view.state.doc, nodePos)
             );
             view.dispatch(tr);
             return true;

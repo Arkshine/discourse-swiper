@@ -6,7 +6,6 @@ import { next } from "@ember/runloop";
 import { service } from "@ember/service";
 import ToolbarButtons from "discourse/components/composer/toolbar-buttons";
 import { ToolbarBase } from "discourse/lib/composer/toolbar";
-import { SWIPER_NODEVIEW_CLASS } from "../lib/constants";
 import { createDragImage, deepTrack } from "../lib/utils";
 import SwiperInline from "./swiper-inline";
 import SwiperSettingsPanel from "./swiper-settings-panel";
@@ -135,7 +134,7 @@ export default class SwiperNodeView extends Component {
   }
 
   get contentDOM() {
-    return this.args.dom.querySelector(".composer-swiper-nodeview");
+    return this.args.dom.firstElementChild;
   }
 
   async showMobileToolbar() {
@@ -239,10 +238,11 @@ export default class SwiperNodeView extends Component {
       return;
     }
 
-    this.swiperWrap.parentElement.classList.add("ProseMirror-selectednode");
+    this.args.dom.classList.add("ProseMirror-selectednode");
 
-    const swiperInstance = this.swiperWrap.querySelector(".main-slider").swiper;
-    this.activeSwiperInEditor.setTo(swiperInstance);
+    this.activeSwiperInEditor.setTo(
+      this.swiperWrap?.querySelector(".main-slider")?.swiper || null
+    );
 
     this.showToolbar();
   }
@@ -252,12 +252,21 @@ export default class SwiperNodeView extends Component {
       return;
     }
 
-    this.swiperWrap.parentElement.classList.remove("ProseMirror-selectednode");
-    this.activeSwiperInEditor.setTo(null);
+    if (this.args.dom.classList.contains("has-selection")) {
+      const { NodeSelection } = this.args.view._swiperPM;
+      this.args.view.dispatch(
+        this.args.view.state.tr.setSelection(
+          NodeSelection.create(this.args.view.state.doc, this.args.getPos())
+        )
+      );
+      this.args.view.focus();
+    } else {
+      this.args.dom.classList.remove("ProseMirror-selectednode");
+      this.activeSwiperInEditor.setTo(null);
 
-    this.closeMenus();
-    this.closeSettingsMenu();
-    this.isEditMode = false;
+      this.closeMenus();
+      this.closeSettingsMenu();
+    }
   }
 
   closeModeMenu() {
@@ -287,43 +296,39 @@ export default class SwiperNodeView extends Component {
     this.closeSettingsMenu();
     this.showToolbar();
 
-    const { view, dom, getPos } = this.args;
-    const { TextSelection } = view._swiperPM;
+    const { view, dom, getPos, node } = this.args;
 
     if (this.isEditMode) {
       this.swiperWrap.classList.add("hidden");
-      this.contentDOM.classList.remove("hidden");
 
       dom.classList.add("edit");
 
-      view.dispatch(this.markNodeMode("edit"));
-      view.dispatch(
-        view.state.tr.setSelection(
-          TextSelection.create(view.state.doc, getPos())
-        )
-      );
+      const pos = getPos();
+      const tr = view.state.tr.setNodeMarkup(pos, null, {
+        ...node.attrs,
+        mode: "edit",
+      });
+
+      view.dispatch(tr);
       view.focus();
+
       // Ensure the node is entirely visible
       dom.scrollIntoView({ block: "center" });
     } else {
       this.swiperWrap.classList.remove("hidden");
-      this.contentDOM.classList.add("hidden");
 
       dom.classList.remove("edit");
 
-      view.dispatch(this.markNodeMode("view"));
+      const pos = getPos();
+      const tr = view.state.tr.setNodeMarkup(pos, null, {
+        ...node.attrs,
+        mode: "view",
+      });
+
+      view.dispatch(tr);
       view.focus();
       view.dispatch(view.state.tr.scrollIntoView());
     }
-  }
-
-  markNodeMode(mode) {
-    const { view, node, getPos } = this.args;
-
-    return view.state.tr.setNodeMarkup(getPos(), null, {
-      ...node.attrs,
-      mode,
-    });
   }
 
   @action
@@ -382,33 +387,55 @@ export default class SwiperNodeView extends Component {
     view.focus();
   }
 
-  stopEvent(event, contentDOM) {
+  stopEvent(event) {
     const { type, target } = event;
     const isExternalDrag = event.dataTransfer?.types.includes("Files");
     const isTargetImage = target.tagName === "IMG";
-    //const isContainerNode = target.classList.contains(SWIPER_CONTAINER_CLASS);
-    const insideContentDOM = contentDOM.contains(target);
-    //const externalDragInProgress =
-    //  isExternalDrag && this.args.view._swiperPM.movingImageToSwiper;
+    const insideContentDOM = this.contentDOM.contains(target);
 
-    // In view mode, we want to allow swiper navigation
+    // Swiper navigation/pagination clicks should not select the nodeview
     if (
-      !this.isEditMode &&
-      (this.swiperWrap?.contains(target) || this.swiperWrap.isEqualNode(target))
+      target.closest(".swiper-button-next") ||
+      target.closest(".swiper-button-prev") ||
+      target.closest(".swiper-pagination")
     ) {
-      if (type === "dragstart" && isTargetImage) {
-        event.preventDefault();
-        return true;
-      }
-    }
-
-    // Ignore event if swiper container itself is the target
-    if (event.target.classList.contains("composer-swiper-node")) {
-      event.stopPropagation();
       return true;
     }
 
     if (insideContentDOM) {
+      // Grid layout breaks PM's click-to-position mapping in gaps between items.
+      // Handle clicks manually: find nearest position or fall back to end of content.
+      if (this.isEditMode && type === "mousedown" && !isTargetImage) {
+        const { view, getPos, node } = this.args;
+        const { TextSelection } = view._swiperPM;
+        const swiperPos = getPos();
+
+        const coords = view.posAtCoords({
+          left: event.clientX,
+          top: event.clientY,
+        });
+
+        let targetPos;
+        if (
+          coords &&
+          coords.pos > swiperPos &&
+          coords.pos < swiperPos + node.nodeSize
+        ) {
+          targetPos = coords.pos;
+        } else {
+          // Fall back to end of content
+          targetPos = swiperPos + 2 + node.firstChild.content.size;
+        }
+
+        view.dispatch(
+          view.state.tr.setSelection(
+            TextSelection.create(view.state.doc, targetPos)
+          )
+        );
+        view.focus();
+        return true;
+      }
+
       if (isTargetImage) {
         if (type === "dragstart") {
           const wrapper = target.closest(".composer-image-node");
@@ -426,18 +453,14 @@ export default class SwiperNodeView extends Component {
             scale: 0.6,
           });
 
-          target
-            .closest(".composer-swiper-nodeview")
-            .classList.add("active-dragging");
+          this.contentDOM.classList.add("active-dragging");
 
           event.stopPropagation();
           return true;
         }
 
         if (type === "dragenter") {
-          target
-            .closest(".composer-swiper-nodeview")
-            .classList.add("active-dragging");
+          this.contentDOM.classList.add("active-dragging");
 
           if (target.tagName === "P") {
             event.preventDefault();
@@ -449,9 +472,7 @@ export default class SwiperNodeView extends Component {
 
         if (type === "dragend") {
           this.reorderingImage = null;
-          target
-            .closest(".composer-swiper-nodeview")
-            .classList.remove("active-dragging");
+          this.contentDOM.classList.remove("active-dragging");
           return false;
         }
 
@@ -471,7 +492,7 @@ export default class SwiperNodeView extends Component {
 
       if (type === "dragover") {
         if (this.reorderingImage || isExternalDrag) {
-          contentDOM.classList.add("dragging-external");
+          this.contentDOM.classList.add("dragging-external");
 
           try {
             this.selectClosestImageToCursor(event);
@@ -488,7 +509,7 @@ export default class SwiperNodeView extends Component {
 
       if (type === "drop") {
         this.lastSelectedImageForDrop = null;
-        //this.removeDropPlaceholder();
+        this.contentDOM.classList.remove("dragging-external");
         contentDOM.classList.remove("dragging-external");
 
         if (this.reorderingImage) {
@@ -509,26 +530,24 @@ export default class SwiperNodeView extends Component {
           );
 
           this.reorderingImage = null;
-          this.contentDOM
-            .querySelector(`.${SWIPER_NODEVIEW_CLASS}`)
-            ?.classList.remove("active-dragging");
+          this.contentDOM.classList.remove("active-dragging");
 
           return true;
         }
       }
 
       if (type === "dragleave") {
-        if (!contentDOM.contains(event.relatedTarget)) {
+        if (!this.contentDOM.contains(event.relatedTarget)) {
           this.lastSelectedImageForDrop = null;
-          //this.removeDropPlaceholder();
-          contentDOM.classList.remove("dragging-external");
+          this.contentDOM.classList.remove("dragging-external");
+          this.contentDOM.classList.remove("active-dragging");
         }
       }
 
       if (type === "dragend") {
         this.lastSelectedImageForDrop = null;
-        //this.removeDropPlaceholder();
-        contentDOM.classList.remove("dragging-external");
+        this.contentDOM.classList.remove("dragging-external");
+        this.contentDOM.classList.remove("active-dragging");
       }
     }
 
@@ -545,9 +564,7 @@ export default class SwiperNodeView extends Component {
     const paragraph = node.firstChild;
 
     const imageElements = Array.from(
-      event.target
-        .closest(".composer-swiper-nodeview")
-        .querySelectorAll(".composer-image-node img")
+      this.contentDOM.querySelectorAll(".composer-image-node img")
     );
     const draggedIndex = imageElements.indexOf(draggedImageElement);
 
@@ -617,23 +634,22 @@ export default class SwiperNodeView extends Component {
     tr.insert(insertPos, sourceImage.node);
     view.dispatch(tr);
 
-    const { NodeSelection } = view._swiperPM;
-
-    // Re-selects nodeview
+    const { TextSelection } = view._swiperPM;
     view.dispatch(
-      view.state.tr.setSelection(NodeSelection.create(view.state.doc, getPos()))
+      view.state.tr.setSelection(
+        TextSelection.create(view.state.doc, insertPos)
+      )
     );
 
-    // Re-selects image if ti was selected before
+    // Re-selects image if it was selected before
     if (draggedImageIsSelected) {
+      const { NodeSelection } = view._swiperPM;
       view.dispatch(
         view.state.tr.setSelection(
           NodeSelection.create(view.state.doc, insertPos)
         )
       );
     }
-
-    view.focus();
 
     return true;
   }

@@ -1,7 +1,6 @@
 import { deepFreeze, deepMerge } from "discourse/lib/object";
 
 export const SWIPER_CONTAINER_CLASS = "composer-swiper-node";
-export const SWIPER_NODEVIEW_CLASS = "composer-swiper-nodeview";
 
 const ORIGINAL_DEFAULT_SETTINGS = {
   enabled: true,
