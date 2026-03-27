@@ -368,6 +368,13 @@ const extension = {
               return;
             }
 
+            if (
+              event.target.closest(".swiper-button-next") ||
+              event.target.closest(".swiper-button-prev")
+            ) {
+              return;
+            }
+
             const { state, dispatch } = view;
             const $pos = state.doc.resolve(view.posAtDOM(swiperDOM, 0));
 
