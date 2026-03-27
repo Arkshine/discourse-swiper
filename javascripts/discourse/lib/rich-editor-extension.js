@@ -373,7 +373,9 @@ const extension = {
 
             for (let depth = $pos.depth; depth >= 0; depth--) {
               const node = $pos.node(depth);
-              if (!(node.type.name === "swiper" && node.attrs.mode !== "edit")) {
+              if (
+                !(node.type.name === "swiper" && node.attrs.mode !== "edit")
+              ) {
                 continue;
               }
 

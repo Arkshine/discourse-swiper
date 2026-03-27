@@ -97,8 +97,6 @@ export default class SwiperNodeView extends Component {
   @service activeSwiperInEditor;
 
   @tracked isEditMode = false;
-  @tracked draggedIndex = null;
-  @tracked isDragging = false;
 
   swiperToolbar = { left: null, right: null };
   menuInstance = { left: null, right: null };
@@ -389,140 +387,108 @@ export default class SwiperNodeView extends Component {
 
   stopEvent(event) {
     const { type, target } = event;
-    const isTargetImage = target.tagName === "IMG";
-    const insideContentDOM = this.contentDOM.contains(target);
 
-    // Lets swiper handles all events
-    // so that swiping, navigation, pagination, etc. work
-    // without PM interfering.
+    // View mode: let Swiper handles everything
     if (
       !this.isEditMode &&
-      !insideContentDOM &&
+      !this.contentDOM.contains(target) &&
       target.closest(".swiper-wrap")
     ) {
+      // Prevents native image drag
+      if (type === "dragstart" && target.tagName === "IMG") {
+        event.preventDefault();
+      }
       return true;
     }
 
-    if (this.isEditMode && insideContentDOM) {
-      // Grid layout breaks PM's click-to-position mapping in gaps between items.
-      if (type === "mousedown" && !isTargetImage) {
-        const { view, getPos, node } = this.args;
-        const { TextSelection } = view._swiperPM;
-        const swiperPos = getPos();
+    // Edit mode: only handle events inside contentDOM
+    if (!this.isEditMode || !this.contentDOM.contains(target)) {
+      return false;
+    }
 
-        const coords = view.posAtCoords({
-          left: event.clientX,
-          top: event.clientY,
-        });
+    const isTargetImage = target.tagName === "IMG";
 
-        let targetPos;
-        if (
-          coords &&
-          coords.pos > swiperPos &&
-          coords.pos < swiperPos + node.nodeSize
-        ) {
-          targetPos = coords.pos;
-        } else {
-          // Fall back to end of content
-          targetPos = swiperPos + 2 + node.firstChild.content.size;
+    // Cursor positioning
+    // Grid layout breaks PM's click-to-position mapping in gaps between items.
+    if (type === "mousedown" && !isTargetImage) {
+      this.#placeCursorAtCoords(event);
+      return true;
+    }
+
+    // Mobile buttons
+    if (type === "touchstart" && isTargetImage) {
+      this.contentDOM
+        .querySelectorAll(".composer-image-node")
+        .forEach((node) => node.classList.remove("mobile-selected"));
+      this.selectedImageNode = target;
+      this.selectedImageNode.parentElement.classList.add("mobile-selected");
+
+      if (this.capabilities.touch) {
+        this.showMobileToolbar();
+      }
+      return false;
+    }
+
+    // Image reordering & external file drops
+    switch (type) {
+      case "dragstart":
+        if (!isTargetImage) {
+          break;
         }
 
-        view.dispatch(
-          view.state.tr.setSelection(
-            TextSelection.create(view.state.doc, targetPos)
-          )
-        );
-        view.focus();
+        this.reorderingImage = {
+          from: target,
+          isSelected: target
+            .closest(".composer-image-node")
+            ?.firstElementChild?.classList.contains("ProseMirror-selectednode"),
+        };
+
+        createDragImage(event, {
+          width: target.closest(".composer-image-node").offsetWidth,
+          height: target.closest(".composer-image-node").offsetHeight,
+          scale: 0.6,
+        });
+
+        this.contentDOM.classList.add("active-dragging");
+        event.stopPropagation();
+        return true;
+
+      case "dragenter":
+        if (isTargetImage) {
+          this.contentDOM.classList.add("active-dragging");
+        }
+        return false;
+
+      case "dragover": {
+        const isExternalDrag = event.dataTransfer?.types.includes("Files");
+        if (!this.reorderingImage && !isExternalDrag) {
+          break;
+        }
+
+        this.contentDOM.classList.add("active-dragging");
+
+        try {
+          this.selectClosestImageToCursor(event);
+        } catch {
+          this.lastSelectedImageForDrop = null;
+        }
+
+        if (!this.externalDragSuppressed) {
+          this.externalDragSuppressed = true;
+          const { view } = this.args;
+          view.dispatch(view.state.tr.setMeta("swiperExternalDrag", true));
+        }
+
         return true;
       }
 
-      if (isTargetImage) {
-        if (type === "dragstart") {
-          const wrapper = target.closest(".composer-image-node");
-
-          this.reorderingImage = {
-            from: target,
-            isSelected: wrapper.firstElementChild?.classList.contains(
-              "ProseMirror-selectednode"
-            ),
-          };
-
-          createDragImage(event, {
-            width: wrapper.offsetWidth,
-            height: wrapper.offsetHeight,
-            scale: 0.6,
-          });
-
-          this.contentDOM.classList.add("active-dragging");
-
-          event.stopPropagation();
-          return true;
-        }
-
-        if (type === "dragenter") {
-          this.contentDOM.classList.add("active-dragging");
-
-          if (target.tagName === "P") {
-            event.preventDefault();
-            return true;
-          }
-
-          return false;
-        }
-
-        if (type === "dragend") {
-          this.reorderingImage = null;
-          this.contentDOM.classList.remove("active-dragging");
-          return false;
-        }
-
-        if (type === "touchstart") {
-          this.contentDOM
-            .querySelectorAll(".composer-image-node")
-            .forEach((node) => node.classList.remove("mobile-selected"));
-          this.selectedImageNode = target;
-          this.selectedImageNode.parentElement.classList.add("mobile-selected");
-
-          if (this.isEditMode && this.capabilities.touch) {
-            this.showMobileToolbar();
-          }
-          return false;
-        }
-      }
-
-      if (type === "dragover") {
-        const isExternalDrag = event.dataTransfer?.types.includes("Files");
-
-        if (this.reorderingImage || isExternalDrag) {
-          this.contentDOM.classList.add("active-dragging");
-
-          try {
-            this.selectClosestImageToCursor(event);
-          } catch {
-            this.lastSelectedImageForDrop = null;
-          }
-
-          if (!this.externalDragSuppressed) {
-            this.externalDragSuppressed = true;
-            const { view } = this.args;
-            view.dispatch(view.state.tr.setMeta("swiperExternalDrag", true));
-          }
-
-          return true;
-        }
-      }
-
-      if (type === "drop") {
-        this.lastSelectedImageForDrop = null;
-        this.contentDOM.classList.remove("active-dragging");
-        this.clearExternalDragSuppression();
+      case "drop":
+        this.#resetDragState();
 
         if (this.reorderingImage) {
           event.preventDefault();
           event.stopPropagation();
 
-          // Since https://github.com/discourse/discourse/commit/118b182dbada8d9419173564ce0b350e89f5d9b3
-          // We can not let PM handle drop event, so we do it ourselves
           this.handleImageDrop(
             {
               view: this.args.view,
@@ -535,35 +501,54 @@ export default class SwiperNodeView extends Component {
           );
 
           this.reorderingImage = null;
-          this.contentDOM.classList.remove("active-dragging");
-
           return true;
         }
-      }
+        break;
 
-      if (type === "dragleave") {
+      case "dragleave":
         if (!this.contentDOM.contains(event.relatedTarget)) {
-          this.lastSelectedImageForDrop = null;
-          this.contentDOM.classList.remove("active-dragging");
-          this.clearExternalDragSuppression();
+          this.#resetDragState();
         }
-      }
+        break;
 
-      if (type === "dragend") {
+      case "dragend":
         this.reorderingImage = null;
-        this.lastSelectedImageForDrop = null;
-        this.contentDOM.classList.remove("active-dragging");
-        this.clearExternalDragSuppression();
-      }
+        this.#resetDragState();
+        break;
     }
 
     return false;
   }
 
-  clearExternalDragSuppression() {
+  #placeCursorAtCoords(event) {
+    const { view, getPos, node } = this.args;
+    const { TextSelection } = view._swiperPM;
+    const swiperPos = getPos();
+
+    const coords = view.posAtCoords({
+      left: event.clientX,
+      top: event.clientY,
+    });
+
+    const targetPos =
+      coords?.pos > swiperPos && coords.pos < swiperPos + node.nodeSize
+        ? coords.pos
+        : swiperPos + 2 + node.firstChild.content.size;
+
+    view.dispatch(
+      view.state.tr.setSelection(
+        TextSelection.create(view.state.doc, targetPos)
+      )
+    );
+    view.focus();
+  }
+
+  #resetDragState() {
+    this.lastSelectedImageForDrop = null;
+    this.contentDOM.classList.remove("active-dragging");
+
     if (this.externalDragSuppressed) {
       this.externalDragSuppressed = false;
-
       const { view } = this.args;
       view.dispatch(view.state.tr.setMeta("swiperExternalDrag", false));
     }
