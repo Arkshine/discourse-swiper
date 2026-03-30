@@ -1,0 +1,172 @@
+.composer-swiper-node {
+  position: relative;
+  white-space: normal;
+
+  // Hides contentDOM in preview mode
+  &:not(.edit) > div > p {
+    display: none;
+  }
+
+  // Edit mode
+  &.edit {
+    position: relative;
+    display: block;
+    min-width: min(300px, 100%);
+    min-height: var(--swiper-edit-min-height);
+    outline: 2px dashed var(--primary-medium);
+    border-radius: var(--d-border-radius);
+
+    > div > p {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(var(--swiper-edit-image-size), 1fr)
+      );
+      gap: var(--space-2);
+      margin: 0;
+      padding: var(--swiper-edit-top-offset) var(--space-2) var(--space-2)
+        var(--space-2);
+      min-height: var(--swiper-edit-min-height);
+      caret-color: transparent;
+      user-select: auto;
+
+      // PM's trailing <br> becomes a grid item, creating an extra row
+      br {
+        display: none;
+      }
+
+      > :not(.composer-image-node) {
+        max-height: var(--swiper-edit-min-height);
+      }
+
+      img[data-placeholder="true"] {
+        width: var(--swiper-edit-image-size);
+        height: var(--swiper-edit-image-size);
+        object-fit: cover;
+      }
+
+      .swiper-placeholder {
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        pointer-events: none;
+        vertical-align: top;
+      }
+
+      .composer-image-node {
+        aspect-ratio: 1;
+
+        [data-identifier="composer-image-toolbar"] {
+          .composer-image-toolbar {
+            &__zoom-out,
+            &__zoom-in,
+            &__add-to-grid {
+              display: none;
+            }
+          }
+        }
+
+        [data-identifier="composer-image-alt-text"] {
+          min-width: auto;
+        }
+      }
+    }
+
+    &.has-selection {
+      outline-style: solid;
+      outline-color: var(--tertiary-medium);
+    }
+
+    // Caret indicators between images during drag/navigation
+    > :not(.active-dragging) .composer-image-node {
+      &.has-caret-after,
+      &.has-caret-before {
+        --caret-width: 2px;
+        position: relative;
+      }
+
+      &.has-caret-after::after,
+      &.has-caret-before::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: var(--caret-width);
+        height: 100%;
+
+        background: var(--tertiary);
+        animation: swiper-caret-blink 1s step-end infinite;
+      }
+
+      &.has-caret-after::after {
+        right: calc((var(--space-2) / -2) - var(--caret-width) - 1px);
+      }
+
+      &.has-caret-before::before {
+        left: calc((var(--space-2) / -2) - var(--caret-width));
+      }
+    }
+
+    .swiper-caret-widget {
+      display: inline-block;
+      width: 2px;
+      height: var(--swiper-edit-image-size);
+      background: var(--tertiary);
+      animation: swiper-caret-blink 1s step-end infinite;
+      vertical-align: top;
+      pointer-events: none;
+    }
+
+    @keyframes swiper-caret-blink {
+      50% {
+        opacity: 0;
+      }
+    }
+  }
+
+  img:not(.ProseMirror-separator, .emoji) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+  }
+}
+
+// Toolbar menus
+.fk-d-menu[data-identifier^="composer-swiper"] {
+  animation: none !important;
+
+  button span[aria-hidden="true"] {
+    display: none;
+  }
+
+  .toolbar__button {
+    background-color: var(--secondary);
+    color: var(--primary-medium);
+    border-radius: var(--d-border-radius);
+
+    .d-icon {
+      color: inherit;
+    }
+
+    &:hover:not(:disabled) {
+      color: var(--primary);
+    }
+
+    &:active {
+      background: var(--secondary);
+    }
+
+    &:focus-visible {
+      @include default-focus;
+    }
+
+    &.--active {
+      background: var(--d-selected);
+    }
+  }
+}
+
+[data-identifier^="composer-swiper-settings"] {
+  z-index: z("modal.dialog");
+}
