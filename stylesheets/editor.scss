@@ -1,6 +1,7 @@
 .composer-swiper-node {
   position: relative;
   white-space: normal;
+  caret-color: transparent;
 
   // Hides contentDOM in preview mode
   &:not(.edit) > .composer-swiper-node__content > p {
