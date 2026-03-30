@@ -546,7 +546,46 @@ const extension = {
       },
     });
 
-    return [swiperPlugin, swiperCursorPlugin];
+    // Clamps the ProseMirror dropcursor position so it doesn't extend
+    // above the editor's visible content area (e.g., into the toolbar zone).
+    const dropCursorClampPlugin = new Plugin({
+      key: new PluginKey("swiperDropCursorClamp"),
+
+      view(editorView) {
+        const clampDropCursor = () => {
+          const parent = editorView.dom.offsetParent;
+          if (!parent) {
+            return;
+          }
+
+          const cursor = parent.querySelector(".prosemirror-dropcursor-inline");
+          if (!cursor) {
+            return;
+          }
+
+          const editorRect = editorView.dom.getBoundingClientRect();
+          const parentRect = parent.getBoundingClientRect();
+          const minTop = editorRect.top - parentRect.top;
+          const currentTop = parseFloat(cursor.style.top);
+
+          if (currentTop < minTop) {
+            const diff = minTop - currentTop;
+            cursor.style.top = `${minTop}px`;
+            cursor.style.height = `${Math.max(0, parseFloat(cursor.style.height) - diff)}px`;
+          }
+        };
+
+        editorView.dom.addEventListener("dragover", clampDropCursor);
+
+        return {
+          destroy() {
+            editorView.dom.removeEventListener("dragover", clampDropCursor);
+          },
+        };
+      },
+    });
+
+    return [swiperPlugin, swiperCursorPlugin, dropCursorClampPlugin];
   },
 };
 
