@@ -267,7 +267,11 @@ export default class SwiperInlineSettings extends Component {
     }
 
     const newAttrs = setNested({ ...currentNode.attrs }, key, value);
-    const tr = view.state.tr.setNodeMarkup(getPos(), null, newAttrs);
+    let tr = view.state.tr.setNodeMarkup(getPos(), null, newAttrs);
+
+    const { NodeSelection } = view._swiperPM;
+    tr = tr.setSelection(NodeSelection.create(tr.doc, getPos()));
+
     view.dispatch(tr);
   }
 
