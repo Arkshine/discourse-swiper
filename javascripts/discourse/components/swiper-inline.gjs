@@ -303,11 +303,9 @@ export default class SwiperInline extends Component {
               </div>
             {{/each}}
           {{else}}
-            {{#each @data.parsedData as |data|}}
+            {{#each @data.images as |image|}}
               <div class="swiper-slide">
-                {{#if (eq data.type "image")}}
-                  {{data.node}}
-                {{/if}}
+                {{image.node}}
               </div>
             {{/each}}
           {{/if}}
@@ -384,9 +382,9 @@ export default class SwiperInline extends Component {
               {{/each}}
 
             {{else}}
-              {{#each @data.parsedData as |data|}}
+              {{#each @data.images as |image|}}
                 <div class="swiper-slide">
-                  {{data.thumbnailNode}}
+                  {{image.thumbnailNode}}
                 </div>
               {{/each}}
             {{/if}}

@@ -1,13 +1,19 @@
 import { camelize } from "@ember/string";
 import { apiInitializer } from "discourse/lib/api";
 import SwiperInline from "../components/swiper-inline";
-import MediaElementParser from "../lib/media-element-parser";
 import swiperExtension from "../lib/rich-editor-extension";
 import { parseWrapParam } from "../lib/utils";
 
 export default apiInitializer((api) => {
   initializeSwiper(api);
 });
+
+function extractImages(root) {
+  return Array.from(root.querySelectorAll("img:not(.emoji)")).map((img) => ({
+    node: img.closest(".lightbox-wrapper, .image-wrapper") ?? img,
+    thumbnailNode: img.cloneNode(true),
+  }));
+}
 
 function initializeSwiper(api) {
   function applySwiper(element, helper) {
@@ -22,7 +28,7 @@ function initializeSwiper(api) {
     helper.renderGlimmer(container, SwiperInline, {
       preview: isPreview,
       config: parseWrapParam({ ...element.dataset }),
-      parsedData: MediaElementParser.run(element),
+      images: extractImages(element),
     });
 
     element.replaceWith(container);
