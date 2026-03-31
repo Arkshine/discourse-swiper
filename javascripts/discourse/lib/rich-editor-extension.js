@@ -10,7 +10,7 @@ const extension = {
 
   nodeSpec: {
     swiper: {
-      content: "block*",
+      content: "block+",
       group: "block",
       selectable: true,
       draggable: true,
@@ -88,6 +88,20 @@ const extension = {
       hasContent: true,
     },
   },
+
+  commands: ({ schema }) => ({
+    insertSwiper() {
+      return (state, dispatch) => {
+        const swiperNode = schema.nodes.swiper.createAndFill();
+        if (!swiperNode) {
+          return false;
+        }
+
+        dispatch?.(state.tr.replaceSelectionWith(swiperNode).scrollIntoView());
+        return true;
+      };
+    },
+  }),
 
   parse: {
     wrap_open(state, token) {

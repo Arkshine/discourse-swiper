@@ -50,14 +50,16 @@ function initializeSwiper(api) {
     icon: "images",
     label: themePrefix("insert_swiper_sample"),
     action: (toolbarEvent) => {
-      toolbarEvent.applySurround(
-        "\n[wrap=swiper]\n",
-        "\n[/wrap]\n",
-        "swiper_sample",
-        {
-          multiline: false,
-        }
-      );
+      if (toolbarEvent.commands) {
+        toolbarEvent.commands.insertSwiper();
+      } else {
+        toolbarEvent.applySurround(
+          "[wrap=swiper]\n",
+          "\n[/wrap]",
+          "swiper_sample",
+          { multiline: false }
+        );
+      }
     },
   });
 }
