@@ -102,7 +102,6 @@
 
     .swiper-button-prev,
     .swiper-button-next {
-      margin-top: calc(var(--swiper-arrow-size) / -2);
       border-radius: var(--swiper-arrow-radius);
       color: var(--swiper-navigation-color);
       background: var(--swiper-arrow-bg);
@@ -135,6 +134,23 @@
         stroke-linejoin: round;
         vector-effect: non-scaling-stroke;
       }
+    }
+
+    // Optical centering: chevron shapes appear shifted toward their tip
+    .swiper-button-next svg {
+      transform: translateX(1px);
+    }
+
+    .swiper-button-prev svg {
+      transform: translateX(-1px);
+    }
+
+    .swiper-vertical > .swiper-button-next svg {
+      transform: rotate(90deg) translateX(1px);
+    }
+
+    .swiper-vertical > .swiper-button-prev svg {
+      transform: rotate(90deg) translateX(-1px);
     }
 
     // Thumb slider
